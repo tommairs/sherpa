@@ -21,4 +21,6 @@ Then point your browser to https://<YourWebServerLocation>/sherpa
 
  - The only way to cancel a scheduled transmission is with a campaign ID, so remember ot use one.
 
+ - Make sure you chmod 766 campaigns.txt because the code need to write to it.
+
 

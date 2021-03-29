@@ -214,7 +214,18 @@ echo '
 
 echo '
 <div container>
-<p>Most recent scheduled Projects:<br>
+<p>Campaign request log:<br>
+';
+
+  // Write this to a flat file for reporting
+//  $fp = fopen('campaigns.txt', 'r');
+  $logs = file_get_contents('campaigns.txt');
+//  fclose($fp);
+
+  echo "<pre>$logs<pre>";
+
+/*
+echo '
 <table cellpadding=5 cellspacing=3 border=1 >
  <tr>
   <th width=30>ID</th>
@@ -227,6 +238,7 @@ echo '
   <th width=150>ACTION</th>
  </tr>
 ';
+*/
 
 
    $query = "SELECT * FROM MyProjects ORDER BY StartTime DESC LIMIT 10";
@@ -384,10 +396,9 @@ $nowFormatted = substr_replace( $nowFormatted, ":", -2, 0 );
         <br>The current time is shown below, edit to the time you want and click NEXT.</p>";
   echo '
     <form name="f1" method="POST" action="./sherpa.php">
-      Provide a name for this job:
-      <input type=text size=30 name=ProjName value=""><br>
-      Provide a short description:
-      <input type=text size=30 name=Description value=""><br><br>
+      <p>Provide a Campaign Name (ID) for this job:<br>
+      <input type=text size=30 name=ProjName value="Sample Campaign"><br>
+       Note that this is <b>REALLY IMPORTANT</b>.  Without a Campaign_ID there is no way to cancel a scheduled transmission!</p>
       <input type=text size=30 name=dateStamp value='.$nowFormatted.'>
       <button type="submit">NEXT</button> &nbsp;
       <br><font size=2px>YYYY-MM-DD hh:mm:ss-TZ Offset</font><br>
@@ -451,16 +462,13 @@ if ($sh == 5){
     // execute the job immediately
     echo "Executing now...";
 
-
-//  if (strtotime($dateStamp) <= $now){
-//       echo "This one qualifies to send now<br>";
-      
+      $Campaign_ID = str_replace (" ","_",$ProjName);
 
        $json = '
 
         {
-          "name": "Fall Sale",
-          "campaign_id": "fall",
+          "name": "'.$ProjName.'",
+          "campaign_id": "'.$Campaign_ID.'",
           "options": {
             "start_time": "'.$dateStamp.'"
           },
@@ -471,9 +479,6 @@ if ($sh == 5){
             "template_id": "'.$SPTemplate.'"
           }
         }';
-
-
-
 
   // Issue the Transmission API call
        $ch = curl_init();
@@ -499,6 +504,12 @@ if ($sh == 5){
        var_dump($json);
   echo "</pre><br>";
 
+   $logline = "".$now." | Params: ". var_export($json,true) ." | Response: " . var_export($res,true) . " <br>";
+
+   $logline = str_replace("\n","",$logline);
+   $logline = str_replace("  ","",$logline);
+//   $logline .= "\r\n";
+
        if ($res['total_rejected_recipients'] > 0){
            echo 'Message could not be sent to ' .$res['total_rejected_recipients']. ' recipients <br>';
        }
@@ -514,6 +525,12 @@ if ($sh == 5){
 
   echo '<a href="./sherpa.php">Cliick here</a> to return to the Sherpa<br>';
 
+  // Write this to a flat file for reporting
+  $fp = fopen('campaigns.txt', 'a');  
+  fwrite($fp, $logline);
+  fclose($fp);
+
+//  echo $logline ."<br>";
 
 }
 
